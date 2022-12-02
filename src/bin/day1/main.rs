@@ -1,5 +1,4 @@
 /// Day 1: Calorie Counting
-
 use std::fs;
 
 pub fn main() {
@@ -9,8 +8,9 @@ pub fn main() {
         .trim()
         .split("\n\n")
         .map(|calories| {
-            calories.split("\n")
-                .map(|s| i32::from_str_radix(s, 10).expect("Invalid integer"))
+            calories
+                .split('\n')
+                .map(|s| s.parse::<i32>().expect("Invalid integer"))
                 .sum()
         })
         .max()
@@ -22,8 +22,9 @@ pub fn main() {
         .trim()
         .split("\n\n")
         .map(|calories| {
-            calories.split("\n")
-                .map(|s| i32::from_str_radix(s, 10).expect("Invalid integer"))
+            calories
+                .split('\n')
+                .map(|s| s.parse::<i32>().expect("Invalid integer"))
                 .sum()
         })
         .collect();
