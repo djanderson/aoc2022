@@ -25,8 +25,12 @@ pub fn main() {
     let mut priority_sum: i32 = 0;
     // NOTE: Iterator.array_chunks could make this more functional but it's currently in nightly
     while let Some(line1) = lines.next() {
-        let line2 = lines.next().expect("number of lines should be a multiple of 3");
-        let line3 = lines.next().expect("number of lines should be a multiple of 3");
+        let line2 = lines
+            .next()
+            .expect("number of lines should be a multiple of 3");
+        let line3 = lines
+            .next()
+            .expect("number of lines should be a multiple of 3");
         let elf1: HashSet<u8> = HashSet::from_iter(line1.bytes());
         let elf2: HashSet<u8> = HashSet::from_iter(line2.bytes());
         let elf3: HashSet<u8> = HashSet::from_iter(line3.bytes());
