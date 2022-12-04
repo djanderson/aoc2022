@@ -9,7 +9,7 @@ pub fn main() {
         .split("\n\n")
         .map(|calories| {
             calories
-                .split('\n')
+                .lines()
                 .map(|s| s.parse::<i32>().expect("Invalid integer"))
                 .sum()
         })
@@ -23,7 +23,7 @@ pub fn main() {
         .split("\n\n")
         .map(|calories| {
             calories
-                .split('\n')
+                .lines()
                 .map(|s| s.parse::<i32>().expect("Invalid integer"))
                 .sum()
         })
