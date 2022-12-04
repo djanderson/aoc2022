@@ -9,9 +9,8 @@ pub fn main() {
         .lines()
         .map(|line| {
             let (r1, r2) = line_to_ranges(line);
-            let r1_contains_r2 = r1.contains(r2.start()) && r1.contains(r2.end());
-            let r2_contains_r1 = r2.contains(r1.start()) && r2.contains(r1.end());
-            let is_contained = r1_contains_r2 || r2_contains_r1;
+            let is_contained = (r1.contains(r2.start()) && r1.contains(r2.end()))
+                || (r2.contains(r1.start()) && r2.contains(r1.end()));
             is_contained as i32
         })
         .sum();
@@ -22,10 +21,8 @@ pub fn main() {
         .lines()
         .map(|line| {
             let (r1, r2) = line_to_ranges(line);
-            let r1_is_overlapped = r1.contains(r2.start()) || r1.contains(r2.end());
-            // Need to check this as well to catch case where r1 is fully contained in r2
-            let r2_is_overlapped = r2.contains(r1.start()) || r2.contains(r1.end());
-            let is_overlapped = r1_is_overlapped || r2_is_overlapped;
+            let is_overlapped = (r1.contains(r2.start()) || r1.contains(r2.end()))
+                || (r2.contains(r1.start()) || r2.contains(r1.end()));
             is_overlapped as i32
         })
         .sum();
