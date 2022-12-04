@@ -10,7 +10,7 @@ pub fn main() {
         .map(|calories| {
             calories
                 .lines()
-                .map(|s| s.parse::<i32>().expect("Invalid integer"))
+                .map(|s| s.parse::<i32>().expect("line should contain a single integer"))
                 .sum()
         })
         .max()
@@ -24,7 +24,7 @@ pub fn main() {
         .map(|calories| {
             calories
                 .lines()
-                .map(|s| s.parse::<i32>().expect("Invalid integer"))
+                .map(|s| s.parse::<i32>().expect("line should contain a single integer"))
                 .sum()
         })
         .collect();
