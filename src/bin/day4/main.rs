@@ -17,7 +17,7 @@ pub fn main() {
             let s2: SectionRange = r2.parse().unwrap();
             (s1, s2)
         })
-        .filter(|(s1, s2)| s1.contains(&s2) || s2.contains(&s1))
+        .filter(|(s1, s2)| s1.contains(s2) || s2.contains(s1))
         .count();
 
     println!("Part 1: {}", n_contained);
@@ -32,7 +32,7 @@ pub fn main() {
             let s2: SectionRange = r2.parse().unwrap();
             (s1, s2)
         })
-        .filter(|(s1, s2)| s1.overlaps(&s2))
+        .filter(|(s1, s2)| s1.overlaps(s2))
         .count();
 
     println!("Part 2: {}", n_overlapped);
