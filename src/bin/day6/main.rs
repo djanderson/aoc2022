@@ -13,7 +13,7 @@ pub fn main() {
     let marker_idx = find_marker(&input, 14);
     let marker_loc = 1 + marker_idx.expect("input should contain start-of-packet marker");
 
-    println!("Part 1: {}", marker_loc);
+    println!("Part 2: {}", marker_loc);
 }
 
 fn find_marker(input: &str, window_size: usize) -> Option<usize> {
