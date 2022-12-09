@@ -1,6 +1,6 @@
 /// Day 6: Tuning Trouble
-use std::fs;
 use std::collections::HashSet;
+use std::fs;
 
 pub fn main() {
     let input = fs::read_to_string("input.txt").unwrap();
