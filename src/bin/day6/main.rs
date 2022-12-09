@@ -2,16 +2,26 @@
 use std::fs;
 use std::collections::HashSet;
 
-const WINDOW_SIZE: usize = 14;
-
 pub fn main() {
     let input = fs::read_to_string("input.txt").unwrap();
 
-    let mut window = [0u8; WINDOW_SIZE];
+    let marker_idx = find_marker(&input, 4);
+    let marker_loc = 1 + marker_idx.expect("input should contain start-of-packet marker");
+
+    println!("Part 1: {}", marker_loc);
+
+    let marker_idx = find_marker(&input, 14);
+    let marker_loc = 1 + marker_idx.expect("input should contain start-of-packet marker");
+
+    println!("Part 1: {}", marker_loc);
+}
+
+fn find_marker(input: &str, window_size: usize) -> Option<usize> {
+    let mut window: Vec<u8> = vec![0; window_size];
 
     let mut marker_idx: Option<usize> = None;
     for (i, b) in input.bytes().enumerate() {
-        window[i % WINDOW_SIZE] = b;
+        window[i % window_size] = b;
         if i < 3 {
             continue;
         }
@@ -20,13 +30,12 @@ pub fn main() {
             break;
         }
     }
-    let marker_loc = 1 + marker_idx.expect("input should contain start-of-packet marker");
 
-    println!("Part 1: {}", marker_loc);
+    marker_idx
 }
 
-fn is_unique(arr: &[u8; WINDOW_SIZE]) -> bool {
-    let mut set = HashSet::with_capacity(WINDOW_SIZE);
+fn is_unique(arr: &[u8]) -> bool {
+    let mut set = HashSet::with_capacity(arr.len());
     let mut unique = true;
     for b in arr {
         if !set.insert(*b) {
