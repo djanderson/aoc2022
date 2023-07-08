@@ -17,11 +17,22 @@ pub fn main() {
         }
     }
 
-    let sum: usize = directory_sizes(filesystem)
-        .iter()
-        .filter(|&&s| s < 100_000)
-        .sum();
-    println!("{}", sum);
+    let mut sizes = directory_sizes(filesystem);
+    sizes.reverse();
+    sizes.sort_unstable();
+
+    // Part 1: sum of all directories less than 100 kB
+    //let sum: usize = sizes.iter().filter(|&&s| s < 100_000).sum();
+    //println!("{}", sum);
+
+    // Part 2: find the smallest directory that gives 30 MB free space
+    let total: usize = 70_000_000;
+    let needed: usize = 30_000_000;
+    let used = *sizes.last().unwrap(); // size of root dir
+    let free = total - used;
+    let must_delete = needed - free;
+    let delete = *sizes.iter().find(|&&s| s > must_delete).unwrap();
+    println!("{}", delete);
 }
 
 fn directory_sizes(fs: FileSystem) -> Vec<usize> {
