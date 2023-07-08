@@ -23,6 +23,48 @@ pub fn main() {
         rows.push(row);
     }
 
+    let nvisible = visible_trees(&rows, &cols);
+    println!("Part 1: {}", nvisible);
+
+    // Part 2
+    let score = best_scenic_score(&rows, &cols);
+    println!("Part 2: {}", score);
+
+}
+
+// Part 2: Find the most scenic view.
+fn best_scenic_score(rows: &Vec<Vec<u8>>, cols: &Vec<Vec<u8>>) -> usize {
+    let mut scores: Vec<usize> = vec![];
+
+    fn score_view<'a>(this: u8, others: impl Iterator<Item = &'a u8>) -> usize {
+        let mut score = 0;
+        for other in others {
+            score += 1;
+            if *other >= this {
+                break;
+            }
+        }
+        score
+    }
+
+    // Don't consider edge trees, since a score on one edge of 0 makes the
+    // total scenic score 0.
+    for i in 1..rows.len() - 1 {
+        for j in 1..cols.len() - 1 {
+            let this_tree = rows[i][j];
+            let score_left = score_view(this_tree, rows[i][..j].iter().rev());
+            let score_right = score_view(this_tree, rows[i][j + 1..].iter());
+            let score_up = score_view(this_tree, cols[j][..i].iter().rev());
+            let score_down = score_view(this_tree, cols[j][i + 1..].iter());
+            scores.push(score_left * score_right * score_up * score_down);
+        }
+    }
+
+    scores.into_iter().max().unwrap()
+}
+
+// Part 1: Find the number of trees that are visible from outside.
+fn visible_trees(rows: &Vec<Vec<u8>>, cols: &Vec<Vec<u8>>) -> usize {
     // All of the outside perimeter are visible.
     let mut nvisible = rows.len() * 2 + (cols.len() - 2) * 2;
 
@@ -56,5 +98,5 @@ pub fn main() {
         }
     }
 
-    println!("{}", nvisible);
+    nvisible
 }
