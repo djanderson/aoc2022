@@ -14,7 +14,7 @@ pub fn main() {
     tracker.insert(tail.clone());
 
     for line in input.lines() {
-        let Some((d, c)) = line.split_once(" ") else {
+        let Some((d, c)) = line.split_once(' ') else {
             panic!("Failed to parse input line");
         };
         let head_offset = Point::from_str(d).expect("Direction should be in R, L, U, D");
