@@ -1,5 +1,5 @@
-use std::collections::HashSet;
 /// Day 9: Rope Bridge
+use std::collections::HashSet;
 use std::fs;
 use std::ops::{Add, Sub};
 use std::str::FromStr;
@@ -13,6 +13,7 @@ pub fn main() {
     let mut tracker: HashSet<Point> = HashSet::new();
     tracker.insert(tail.clone());
 
+    // Part 1
     for line in input.lines() {
         let Some((d, c)) = line.split_once(' ') else {
             panic!("Failed to parse input line");
@@ -27,6 +28,37 @@ pub fn main() {
     }
 
     println!("Part 1: {}", tracker.len());
+
+    // Part 2
+    // Algorithm change: Instead of a distinct head and tail, I just track 10 (1
+    // head + 9 tails) "knots". For the head knot, I apply one movement from the
+    // input file, then apply the "following" rules to each tail knot in
+    // sequence. The last knot is cloned into a hashset to track unique
+    // locations.
+
+    const N_KNOTS: usize = 10;
+    let input = fs::read_to_string("input.txt").unwrap();
+    let mut knots: Vec<Point> = vec![Point::default(); N_KNOTS];
+    tracker.clear();
+
+    for line in input.lines() {
+        let Some((d, c)) = line.split_once(' ') else {
+            panic!("Failed to parse input line");
+        };
+        let head_offset = Point::from_str(d).expect("Direction should be in R, L, U, D");
+        let count = i32::from_str(c).expect("Count should be an integer");
+        for _ in 0..count {
+            knots[0] = &knots[0] + &head_offset;
+            for i in 1..N_KNOTS {
+                knots[i] = &knots[i] + &tail_offset(&knots[i - 1], &knots[i]);
+                if i == N_KNOTS - 1 {
+                    tracker.insert(knots[i].clone()); // track the last knot
+                }
+            }
+        }
+    }
+
+    println!("Part 2: {}", tracker.len());
 }
 
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
