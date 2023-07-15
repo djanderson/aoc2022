@@ -30,7 +30,7 @@ fn part_2() -> Result<(), ParseInstructionError> {
         }
         col += 1;
         if col == MAX_COLS {
-            print!("\n");
+            println!();
             row += 1;
             col = 0;
         }
