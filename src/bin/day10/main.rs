@@ -3,6 +3,66 @@ use std::fs;
 use std::str::FromStr;
 
 pub fn main() -> Result<(), ParseInstructionError> {
+    println!("Part 1: {}", part_1()?);
+    println!("Part 2:");
+    part_2()?;
+
+    Ok(())
+}
+
+/// CRT
+fn part_2() -> Result<(), ParseInstructionError> {
+    let input = fs::read_to_string("input.txt").unwrap();
+    let mut cpu = Cpu::new();
+    let mut insn_mem = input.lines().map(|s| Instruction::from_str(s).unwrap());
+    const MAX_COLS: i32 = 40;
+    const MAX_ROWS: i32 = 6;
+    let mut row = 0;
+    let mut col = 0;
+
+    cpu.pc = insn_mem.next();
+
+    loop {
+        // Draw pixel
+        match cpu.x {
+            x if ((col - 1)..=(col + 1)).contains(&x) => print!("#"),
+            _ => print!("."),
+        }
+        col += 1;
+        if col == MAX_COLS {
+            print!("\n");
+            row += 1;
+            col = 0;
+        }
+        if row == MAX_ROWS {
+            break;
+        }
+
+        // Advance CPU pipeline
+        match &mut cpu {
+            Cpu {
+                pc: Some(Instruction { op, cycle: 1 }),
+                ..
+            } => {
+                match op {
+                    OpCode::Addx(addend) => cpu.x += *addend,
+                    OpCode::Noop => {}
+                }
+                cpu.pc = insn_mem.next();
+            }
+            Cpu {
+                pc: Some(Instruction { cycle, .. }),
+                ..
+            } => *cycle -= 1,
+            Cpu { pc: None, .. } => break,
+        }
+    }
+
+    Ok(())
+}
+
+/// Register
+fn part_1() -> Result<i32, ParseInstructionError> {
     let input = fs::read_to_string("input.txt").unwrap();
     let mut cpu = Cpu::new();
     let mut clock: u64 = 1;
@@ -39,9 +99,7 @@ pub fn main() -> Result<(), ParseInstructionError> {
         }
     }
 
-    println!("Part 1: {}", total_signal_strength);
-
-    Ok(())
+    Ok(total_signal_strength)
 }
 
 #[derive(Debug)]
