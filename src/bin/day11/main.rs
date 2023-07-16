@@ -18,7 +18,7 @@ pub fn main() {
         .collect();
 
     let mut n_inspections = vec![0usize; monkeys.len()];
-    let lcm = monkeys.iter().map(|m| m.divisor).reduce(|a, b| lcm(a, b)).unwrap();
+    let lcm = monkeys.iter().map(|m| m.divisor).reduce(lcm).unwrap();
 
     for _round in 0..10000 {
         for (from_monkey_idx, monkey) in monkeys.iter().enumerate() {
