@@ -18,13 +18,14 @@ pub fn main() {
         .collect();
 
     let mut n_inspections = vec![0usize; monkeys.len()];
+    let lcm = monkeys.iter().map(|m| m.divisor).reduce(|a, b| lcm(a, b)).unwrap();
 
-    for _round in 0..20 {
+    for _round in 0..10000 {
         for (from_monkey_idx, monkey) in monkeys.iter().enumerate() {
             n_inspections[from_monkey_idx] += monkey.items.borrow().len();
 
             for worry in monkey.items.borrow_mut().iter_mut() {
-                *worry = (monkey.test)(*worry) / 3;
+                *worry = (monkey.test)(*worry) % lcm;
             }
 
             while let Some(worry) = monkey.items.borrow_mut().pop() {
@@ -40,10 +41,10 @@ pub fn main() {
 }
 
 struct Monkey {
-    divisor: i32,
-    test: Box<dyn Fn(i32) -> i32>,
-    items: RefCell<Vec<i32>>,
-    partners: [i32; 2], // index 0 -> false, index 1 -> true
+    divisor: u64,
+    test: Box<dyn Fn(u64) -> u64>,
+    items: RefCell<Vec<u64>>,
+    partners: [u64; 2], // index 0 -> false, index 1 -> true
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -58,24 +59,24 @@ impl FromStr for Monkey {
         let items: RefCell<Vec<_>> =
             RefCell::new(line[18..].split(", ").map(|s| s.parse().unwrap()).collect());
         line = lines.next().unwrap();
-        let test: Box<dyn Fn(i32) -> i32> = {
+        let test: Box<dyn Fn(u64) -> u64> = {
             let op = match line.chars().nth(23).unwrap() {
-                '+' => i32::checked_add,
-                '*' => i32::checked_mul,
+                '+' => u64::checked_add,
+                '*' => u64::checked_mul,
                 unknown => panic!("Unknown operation: '{}'", unknown),
             };
             match &line[25..] {
-                "old" => Box::new(move |x: i32| op(x, x).unwrap()),
+                "old" => Box::new(move |x: u64| op(x, x).unwrap()),
                 rhs => {
                     let n = rhs.parse().unwrap();
-                    Box::new(move |x: i32| op(x, n).unwrap())
+                    Box::new(move |x: u64| op(x, n).unwrap())
                 }
             }
         };
         line = lines.next().unwrap();
-        let divisor: i32 = line[21..].parse().unwrap();
+        let divisor: u64 = line[21..].parse().unwrap();
         line = lines.next().unwrap();
-        let mut partners = [0i32, 2];
+        let mut partners = [0u64, 2];
         partners[1] = line[29..].parse().unwrap();
         line = lines.next().unwrap();
         partners[0] = line[30..].parse().unwrap();
@@ -86,4 +87,19 @@ impl FromStr for Monkey {
             partners,
         })
     }
+}
+
+#[inline]
+fn gcd(mut a: u64, mut b: u64) -> u64 {
+    while b != 0 {
+        let t = b;
+        b = a % b;
+        a = t;
+    }
+    a
+}
+
+#[inline]
+fn lcm(a: u64, b: u64) -> u64 {
+    a / gcd(a, b) * b
 }
