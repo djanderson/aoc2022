@@ -23,7 +23,7 @@ pub fn main() {
     let mut heap: BinaryHeap<GridSquare> = BinaryHeap::new();
     let mut visited: HashSet<Coordinates> = HashSet::new();
     let mut start: Coordinates = Default::default();
-    let mut end: Coordinates = Default::default();
+    let mut _end: Coordinates = Default::default();
 
     // Initialize "heightmap"
     for (i, line) in input.lines().enumerate() {
@@ -33,12 +33,11 @@ pub fn main() {
             let mut node = Node::new(coordinates, height, usize::MAX);
             match height {
                 b'S' => {
-                    start = coordinates;
                     node.height = b'a';
-                    node.distance = 0;
                 }
                 b'E' => {
-                    end = coordinates;
+                    start = coordinates;
+                    node.distance = 0;
                     node.height = b'z';
                 }
                 _ => {}
@@ -67,7 +66,8 @@ pub fn main() {
 
     while let Some(position) = heap.pop() {
         let coordinates = position.borrow().coordinates;
-        if coordinates == end {
+        let height = position.borrow().height;
+        if height == b'a' {
             // Found optimal path to end position, print distance in number of steps
             println!("Part 1: {}", position.borrow().distance);
             break;
@@ -97,7 +97,7 @@ fn neighbors(
 
     let mut check_neighbor = |r: usize, c: usize| {
         let node = &heightmap[r][c];
-        if !visited.contains(&(r, c)) && node.borrow().height <= height + 1 {
+        if !visited.contains(&(r, c)) && node.borrow().height >= height - 1 {
             result.push(Rc::clone(node));
         }
     };
