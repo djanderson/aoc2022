@@ -11,14 +11,14 @@ use std::cmp::Ordering;
 use std::fs;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum Item {
+enum Packet {
     Int(i32),
-    List(Vec<Item>),
+    List(Vec<Packet>),
 }
 
-impl Ord for Item {
+impl Ord for Packet {
     fn cmp(&self, other: &Self) -> Ordering {
-        use Item::*;
+        use Packet::*;
         match (self, other) {
             (Int(x), Int(y)) => x.cmp(y),
             (List(u), List(v)) => u.cmp(v),
@@ -28,32 +28,32 @@ impl Ord for Item {
     }
 }
 
-impl PartialOrd for Item {
+impl PartialOrd for Packet {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 // Parse an integer
-fn parse_integer(input: &str) -> IResult<&str, Item> {
-    map_res(digit1, |s: &str| s.parse::<i32>().map(Item::Int))(input)
+fn parse_integer(input: &str) -> IResult<&str, Packet> {
+    map_res(digit1, |s: &str| s.parse::<i32>().map(Packet::Int))(input)
 }
 
 // Parse a list of Items
-fn parse_list(input: &str) -> IResult<&str, Item> {
+fn parse_list(input: &str) -> IResult<&str, Packet> {
     let parser = separated_list0(char(','), parse_item);
 
     delimited(char('['), parser, char(']'))(input)
-        .map(|(remaining, items)| (remaining, Item::List(items)))
+        .map(|(remaining, items)| (remaining, Packet::List(items)))
 }
 
 // This will parse an Item
-fn parse_item(input: &str) -> IResult<&str, Item> {
+fn parse_item(input: &str) -> IResult<&str, Packet> {
     alt((parse_integer, parse_list))(input)
 }
 
 pub fn main() {
-    use Item::*;
+    use Packet::*;
 
     let input = fs::read_to_string("input.txt").unwrap();
 
@@ -80,7 +80,7 @@ pub fn main() {
     // Divider packet [[6]]
     let divider2 = List(vec![List(vec![Int(6)])]);
 
-    let mut packets: Vec<Item> = input
+    let mut packets: Vec<Packet> = input
         .lines()
         .filter(|l| !l.is_empty())
         .map(|pkt| all_consuming(parse_list)(pkt).unwrap().1)
