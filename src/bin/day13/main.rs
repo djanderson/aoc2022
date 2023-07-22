@@ -39,17 +39,22 @@ fn parse_integer(input: &str) -> IResult<&str, Packet> {
     map_res(digit1, |s: &str| s.parse::<i32>().map(Packet::Int))(input)
 }
 
-// Parse a list of Items
+// Parse a list of Packets
 fn parse_list(input: &str) -> IResult<&str, Packet> {
-    let parser = separated_list0(char(','), parse_item);
+    let parser = separated_list0(char(','), parse_packet);
 
     delimited(char('['), parser, char(']'))(input)
-        .map(|(remaining, items)| (remaining, Packet::List(items)))
+        .map(|(remaining, pkts)| (remaining, Packet::List(pkts)))
 }
 
-// This will parse an Item
-fn parse_item(input: &str) -> IResult<&str, Packet> {
+// Parse a Packet (either an int or another list)
+fn parse_packet(input: &str) -> IResult<&str, Packet> {
     alt((parse_integer, parse_list))(input)
+}
+
+// Consume an entire line and convert into Packet
+fn parse_line(input: &str) -> IResult<&str, Packet> {
+    all_consuming(parse_list)(input)
 }
 
 pub fn main() {
@@ -66,8 +71,8 @@ pub fn main() {
 
     for (i, (left, right)) in packets.enumerate() {
         let index = i + 1;
-        let (_, left) = all_consuming(parse_list)(left).unwrap();
-        let (_, right) = all_consuming(parse_list)(right).unwrap();
+        let (_, left) = parse_line(left).unwrap();
+        let (_, right) = parse_line(right).unwrap();
         if left < right {
             sum += index;
         }
@@ -83,7 +88,7 @@ pub fn main() {
     let mut packets: Vec<Packet> = input
         .lines()
         .filter(|l| !l.is_empty())
-        .map(|pkt| all_consuming(parse_list)(pkt).unwrap().1)
+        .map(|pkt| parse_line(pkt).unwrap().1)
         .collect();
 
     packets.push(divider1.clone());
