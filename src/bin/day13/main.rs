@@ -36,9 +36,7 @@ impl PartialOrd for Item {
 
 // Parse an integer
 fn parse_integer(input: &str) -> IResult<&str, Item> {
-    map_res(digit1, |digit_str: &str| {
-        digit_str.parse::<i32>().map(Item::Int)
-    })(input)
+    map_res(digit1, |s: &str| s.parse::<i32>().map(Item::Int))(input)
 }
 
 // Parse a list of Items
