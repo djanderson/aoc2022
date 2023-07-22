@@ -10,7 +10,7 @@ use nom::{
 use std::cmp::Ordering;
 use std::fs;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 enum Item {
     Int(i32),
     List(Vec<Item>),
@@ -53,6 +53,8 @@ fn parse_item(input: &str) -> IResult<&str, Item> {
 }
 
 pub fn main() {
+    use Item::*;
+
     let input = fs::read_to_string("input.txt").unwrap();
 
     let packets = input
@@ -72,4 +74,34 @@ pub fn main() {
     }
 
     println!("Part 1: {}", sum);
+
+    // Divider packet [[2]]
+    let divider1 = List(vec![List(vec![Int(2)])]);
+    // Divider packet [[6]]
+    let divider2 = List(vec![List(vec![Int(6)])]);
+
+    let mut packets: Vec<Item> = input
+        .lines()
+        .filter(|l| !l.is_empty())
+        .map(|pkt| all_consuming(parse_list)(pkt).unwrap().1)
+        .collect();
+
+    packets.push(divider1.clone());
+    packets.push(divider2.clone());
+
+    packets.sort();
+
+    let part2: usize = packets
+        .into_iter()
+        .enumerate()
+        .filter_map(|(i, pkt)| {
+            if pkt == divider1 || pkt == divider2 {
+                Some(i + 1)
+            } else {
+                None
+            }
+        })
+        .product();
+
+    println!("Part 2: {}", part2);
 }
