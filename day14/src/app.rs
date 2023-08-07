@@ -1,3 +1,4 @@
+use bitvec::prelude::*;
 use leptos::*;
 use leptos_meta::{provide_meta_context, Meta, Stylesheet, Title};
 use leptos_router::{Route, Router, Routes};
@@ -6,10 +7,11 @@ use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use web_sys::Path2d;
 
-const PIXEL_RATIO: f64 = 5.0;
-const HALF_PIXEL_RATIO: f64 = PIXEL_RATIO / 2.0;
-const CANVAS_WIDTH: f64 = 800.0;
-const CANVAS_HEIGHT: f64 = 800.0;
+const PIXEL_RATIO: f64 = 4.0;
+const CANVAS_WIDTH: f64 = 1400.0;
+const CANVAS_HEIGHT: f64 = 700.0;
+const CANVAS_PIXEL_WIDTH: usize = (CANVAS_WIDTH / PIXEL_RATIO) as usize;
+const CANVAS_PIXEL_HEIGHT: usize = (CANVAS_HEIGHT / PIXEL_RATIO) as usize;
 const SIM_CENTER: f64 = 500.0; // simulation centered around x == 500.0
 
 #[component]
@@ -47,6 +49,7 @@ fn request_animation_frame(f: &Closure<dyn FnMut()>) {
 
 fn simulate(
     rocks: Path2d,
+    mut hit_region: BitBox,
     canvas: HtmlElement<html::Canvas>,
     incr_sand_count: impl Fn() + 'static,
 ) -> Result<(), JsValue> {
@@ -65,66 +68,28 @@ fn simulate(
     let slate_gray = JsValue::from_str("rgb(112, 128, 144)");
     let sandy_brown = JsValue::from_str("rgb(244, 164, 96)");
 
-    let x = CANVAS_WIDTH / 2.0;
-    let y = 0.0;
-    let mut x_offset = 0.0;
-    let mut y_offset = 0.0;
+    const X_START: usize = CANVAS_PIXEL_WIDTH / 2;
+    const Y_START: usize = 0;
+    let mut x = X_START;
+    let mut y = Y_START;
 
-    let mut resting_sand = web_sys::Path2d::new()?;
+    let mut blocked: bool = false;
+    let resting_sand = web_sys::Path2d::new()?;
     let falling_sand = web_sys::Path2d::new()?;
-    falling_sand.rect(x, y, PIXEL_RATIO, PIXEL_RATIO);
+
+    falling_sand.rect(x as f64 * PIXEL_RATIO, y as f64 * PIXEL_RATIO, PIXEL_RATIO, PIXEL_RATIO);
 
     *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-        let hit = |x: f64, y: f64| -> bool {
-            ctx.is_point_in_path_with_path_2d_and_f64(&rocks, x, y)
-                || ctx.is_point_in_path_with_path_2d_and_f64(&resting_sand, x, y)
+        let hit = |x: usize, y: usize| -> bool {
+            let pixel = y * CANVAS_PIXEL_WIDTH + x;
+            //log!("hit pixel: {}, x: {}, y: {}: {}", pixel, x, y, hit_region[pixel]);
+            if y > CANVAS_PIXEL_HEIGHT {
+                panic!("y out of bounds");
+            }
+            hit_region[pixel]
         };
 
-        // If we hit the bottom edge of the canvas, we're falling into the abyss
-        let abyss = y + y_offset + PIXEL_RATIO + HALF_PIXEL_RATIO > CANVAS_HEIGHT;
-        if abyss {
-            // Drop our handle to this closure so that it will get cleaned
-            // up once we return.
-            let _ = f.borrow_mut().take();
-            return;
-        }
-
-        // Check straight down
-        if hit(
-            x + x_offset + HALF_PIXEL_RATIO,
-            y + y_offset + PIXEL_RATIO + HALF_PIXEL_RATIO,
-        ) {
-            // Check down-left
-            if hit(
-                x + x_offset - HALF_PIXEL_RATIO,
-                y + y_offset + PIXEL_RATIO + HALF_PIXEL_RATIO,
-            ) {
-                // Check down-right
-                if hit(
-                    x + x_offset + PIXEL_RATIO + HALF_PIXEL_RATIO,
-                    y + y_offset + PIXEL_RATIO + HALF_PIXEL_RATIO,
-                ) {
-                    // Add unit to resting sand
-                    incr_sand_count();
-                    resting_sand = web_sys::Path2d::new_with_other(&resting_sand).unwrap();
-                    resting_sand.rect(x + x_offset, y + y_offset, PIXEL_RATIO, PIXEL_RATIO);
-                    y_offset = 0.0;
-                    x_offset = 0.0;
-                } else {
-                    // Fall down-right
-                    x_offset += PIXEL_RATIO;
-                    y_offset += PIXEL_RATIO;
-                }
-            } else {
-                // Fall down-left
-                x_offset -= PIXEL_RATIO;
-                y_offset += PIXEL_RATIO;
-            }
-        } else {
-            // Fall straight down
-            y_offset += PIXEL_RATIO;
-        }
-
+        // Draw canvas
         ctx.clear_rect(0.0, 0.0, CANVAS_WIDTH, CANVAS_HEIGHT);
         ctx.set_fill_style(&slate_gray);
         ctx.fill_with_path_2d(&rocks);
@@ -132,12 +97,56 @@ fn simulate(
         ctx.fill_with_path_2d(&resting_sand);
         ctx.save();
         ctx.begin_path();
-        _ = ctx.translate(x_offset, y_offset);
+        _ = ctx.translate(x as f64 * PIXEL_RATIO, y as f64 * PIXEL_RATIO);
         ctx.set_fill_style(&sandy_brown);
         ctx.fill_with_path_2d(&falling_sand);
         ctx.close_path();
         ctx.restore();
 
+        if blocked {
+            // Drop our handle to this closure so that it will get cleaned
+            // up once we return.
+            let _ = f.borrow_mut().take();
+            return;
+        }
+
+        loop {
+            // Check straight down
+            if hit(x, y + 1) {
+                // Check down-left
+                if hit(x - 1, y + 1) {
+                    // Check down-right
+                    if hit(x + 1, y + 1) {
+                        // Add unit to resting sand
+                        incr_sand_count();
+                        let canvas_x = x as f64 * PIXEL_RATIO;
+                        let canvas_y = y as f64 * PIXEL_RATIO;
+                        resting_sand.rect(canvas_x, canvas_y, PIXEL_RATIO, PIXEL_RATIO);
+
+                        let pixel = y * CANVAS_PIXEL_WIDTH + x;
+                        hit_region.set(pixel, true);
+
+                        blocked = x == X_START && y == Y_START;
+                        y = Y_START;
+                        x = X_START;
+
+                        break; // break to request new animation frame
+                    } else {
+                        // Fall down-right
+                        x += 1;
+                        y += 1;
+                    }
+                } else {
+                    // Fall down-left
+                    x -= 1;
+                    y += 1;
+                }
+            } else {
+                // Fall straight down
+                y += 1;
+            }
+
+        }
         // Schedule ourself for another requestAnimationFrame callback.
         request_animation_frame(f.borrow().as_ref().unwrap());
     }) as Box<dyn FnMut()>));
@@ -168,12 +177,7 @@ fn HomePage(cx: Scope) -> impl IntoView {
     let incr_sand_count = move || set_count.update(|n| *n += 1);
 
     // Coordinates are centered around SIM_CENTER in the given coordinate system.
-    // We need to scale by the pixel ratio and recenter in the middle of the canvas.
-    let transform = |coords: (f64, f64)| -> (f64, f64) {
-        let x = ((coords.0 - SIM_CENTER) * PIXEL_RATIO) + (CANVAS_WIDTH / 2.0);
-        let y = coords.1 * PIXEL_RATIO;
-        (x, y)
-    };
+    const X_SHIFT: isize = -(SIM_CENTER as isize) + (CANVAS_PIXEL_WIDTH as isize) / 2;
 
     board_canvas_ref.on_load(cx, move |canvas: HtmlElement<html::Canvas>| {
         canvas.set_width(CANVAS_WIDTH as u32);
@@ -182,10 +186,13 @@ fn HomePage(cx: Scope) -> impl IntoView {
             let input = get_input().await.unwrap();
 
             // Build rock path
-            let mut rocks = web_sys::Path2d::new().unwrap();
+            let rocks = web_sys::Path2d::new().unwrap();
+            let mut hit_region = bitbox![0; CANVAS_PIXEL_WIDTH * CANVAS_PIXEL_HEIGHT];
+
+            let mut floor = 0;
+
             for line in input.lines() {
-                rocks = web_sys::Path2d::new_with_other(&rocks).unwrap();
-                let coords: Vec<(f64, f64)> = line
+                let coords: Vec<(isize, isize)> = line
                     .split(" -> ")
                     .map(|xy| {
                         let (x, y) = xy.split_once(',').unwrap();
@@ -194,21 +201,48 @@ fn HomePage(cx: Scope) -> impl IntoView {
                     .collect();
                 let mut coord_pairs = coords.windows(2);
                 while let Some(&[p1, p2]) = coord_pairs.next() {
-                    let (x1, y1) = transform(p1);
-                    let (x2, y2) = transform(p2);
+                    let (mut x1, y1) = p1;
+                    x1 += X_SHIFT;
+                    let (mut x2, y2) = p2;
+                    x2 += X_SHIFT;
                     let x = x1.min(x2);
                     let y = y1.min(y2);
-                    let width = f64::abs(x2 - x1) + PIXEL_RATIO;
-                    let height = f64::abs(y2 - y1) + PIXEL_RATIO;
-                    rocks.rect(x, y, width, height);
+                    floor = floor.max(y1.max(y2));
+                    let width = x1.abs_diff(x2) + 1;
+                    let height = y1.abs_diff(y2) + 1;
+                    if height == 1 {
+                        let offset = y as usize * CANVAS_PIXEL_WIDTH + x as usize;
+                        for i in 0..width {
+                            hit_region.set(offset + i, true);
+                        }
+                    } else {
+                        for i in 0..height {
+                            hit_region.set((y as usize + i) * CANVAS_PIXEL_WIDTH + x as usize, true);
+                        }
+                    }
+                    rocks.rect(
+                        x as f64 * PIXEL_RATIO,
+                        y as f64 * PIXEL_RATIO,
+                        width as f64 * PIXEL_RATIO,
+                        height as f64 * PIXEL_RATIO,
+                    );
                 }
             }
 
-            _ = simulate(rocks, canvas, incr_sand_count);
+            floor += 2;
+
+            // Draw Part 2 floor
+            for i in 0..CANVAS_PIXEL_WIDTH {
+                hit_region.set(floor as usize * CANVAS_PIXEL_WIDTH + i, true);
+            }
+            rocks.rect(0.0, floor as f64 * PIXEL_RATIO, CANVAS_WIDTH, PIXEL_RATIO);
+
+            _ = simulate(rocks, hit_region, canvas, incr_sand_count);
         })
     });
 
     view! { cx,
+
         <h1>"AOC 2022 - Day 14"</h1>
         <p>Count: {count}</p>
         <canvas id="board" _ref=board_canvas_ref width="{CANVAS_WIDTH}" height="{CANVAS_HEIGHT}"></canvas>
