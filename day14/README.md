@@ -4,6 +4,4 @@
 
 Advent of Code 2022 in Rust.
 
-Use `cd src/bin/dayN; cargo run --bin dayN` to run a specific day's challenge.
-
-Day14 is a leptos webapp, see the [Day14 README](./day14/README.md).
+`cargo leptos serve`
